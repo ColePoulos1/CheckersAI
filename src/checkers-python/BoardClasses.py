@@ -230,9 +230,6 @@ class Board:
             return (chess_being_moved.is_king or chess_being_moved.color == "W") and self.board[chess_row - 1][chess_col - 1].color != turn and self.board[chess_row - 1][chess_col - 1].color != "."
         return False
 
-
-
-
     def get_all_possible_moves(self,color):
         """
         this function returns the all possible moves of the player whose turn it is
@@ -420,29 +417,52 @@ class Board:
 
 if __name__ == "__main__":
 
+    # Example of how multiple jumps are handled.
+    # print("Multiple jumps in one move")
+    # b = Board(7,7,2)
+    # b.board[1][3] = Checker.Checker("B", [1, 3])
+    # b.board[2][2] = Checker.Checker("W", [2,2])
+    # b.board[4][2] = Checker.Checker("W", [4,2])
+    # b.show_board()
+    # m = b.get_all_possible_moves("B")
+    # print(m)
+    # print(m[0])
+    # print(m[0][0])
+    # b.make_move(m[0][0], "B")
+    # b.show_board()
 
     b=Board(7,7,2)
-    b.board[1][3] = Checker.Checker("W", [1, 3])
+    b.initialize_game()
+    b.show_board()
+    m = b.get_all_possible_moves(1)
+    print(m)
+    b.make_move(m[0][0],1)
+    b.show_board()
+    m = b.get_all_possible_moves(1)
 
-
-    b.show_board()
-    m = b.get_all_possible_moves("W")[0][0]
-    b.make_move(m,"W")
-    b.show_board()
-    m = b.get_all_possible_moves("W")[0][0]
-    b.make_move(m,"W")
-    b.show_board()
-    m = b.get_all_possible_moves("W")[0][0]
-    b.make_move(m,"W")
-    b.show_board()
-    print("Undo")
-    b.undo()
-    b.show_board()
-    print("Undo")
-    b.undo()
-    b.show_board()
-    print("Undo")
-    b.undo()
-    b.show_board()
+    # b.board[1][3] = Checker.Checker("W", [1, 3])
+    # b.show_board()
+    #
+    # m = b.get_all_possible_moves("W")
+    # print(m)
+    # b.make_move(m,"W")
+    # b.show_board()
+    # m = b.get_all_possible_moves("W")[0][0]
+    # print(m)
+    # b.make_move(m,"W")
+    # b.show_board()
+    # m = b.get_all_possible_moves("W")[0][0]
+    # print(m)
+    # b.make_move(m,"W")
+    # b.show_board()
+    # print("Undo")
+    # b.undo()
+    # b.show_board()
+    # print("Undo")
+    # b.undo()
+    # b.show_board()
+    # print("Undo")
+    # b.undo()
+    # b.show_board()
 
 
