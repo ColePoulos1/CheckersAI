@@ -26,23 +26,25 @@ class StudentAI:
         value = 0
         difference = old_diff - diffInPieces
         # There's no switch/case for python but I'm sure
-        # there's a better way for this part.
-        if difference > 1:
-            value += 5
-        elif difference < -1:
-            value -= 5
-        elif difference == 1:
-            value += 1
-        elif difference == -1:
-            value -= 1
+        # there's a better way for this part.  - There kindaaa was?
+        if abs(difference) == 1:
+            value += 10 * difference
+        else:
+            value += 50 * difference
+
+        # There will be a secondary value heuristic here for getting closer to an enemy maybe?
+        # adding value in the order of like 1-5 points, just enough to be better than moving away
+
+        # https://www.mini.pw.edu.pl/~mandziuk/PRACE/es_init.pdf <- this paper has a pretty long list of
+        # checkers heuristics that we could consider along the way, if we wanna get tryhard lol
 
         # A tie is listed as a 0 as a return
-        # not sure what a tie's impact on the value should be.
+        # not sure what a tie's impact on the value should be. - maybe -500? not good but not as bad as losing
         winningNumber = board.is_win(color)
         if winningNumber == color:
-            value += 100
+            value += 1000
         elif winningNumber != color and winningNumber != 0:
-            value -= 100
+            value -= 1000
         return value
 
     # TODO : this still isn't monte carlo tree search I don't think, so that needs to be changed.
