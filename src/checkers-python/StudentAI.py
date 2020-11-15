@@ -1,10 +1,11 @@
 from random import randint
 from BoardClasses import Move
 from BoardClasses import Board
-#The following part should be completed by students.
-#Students can modify anything except the class name and exisiting functions and varibles.
-class StudentAI:
+# The following part should be completed by students.
+# Students can modify anything except the class name and exisiting functions and varibles.
 
+
+class StudentAI:
     def __init__(self,col,row,p):
         self.col = col
         self.row = row
@@ -60,7 +61,7 @@ class StudentAI:
         for pieces in moves:
             for m in pieces:
                 board.make_move(m, self.color)
-                tmp = self.r_Traversal(board, depth + 1, self.opponent[color])
+                tmp = self.r_traversal(board, depth + 1, self.opponent[color])
                 board.undo()
                 # Init the first move if not initialized.
                 if cur_value is None:
