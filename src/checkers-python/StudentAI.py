@@ -44,7 +44,8 @@ class StudentAI:
             value -= 100
         return value
 
-    # Recursively
+    # TODO : this still isn't monte carlo tree search I don't think, so that needs to be changed.
+    # Uses recursion to traverse the move tree, but
     # board = a copy of the board after a move has been made.
     # depth = Most likely need to limit the search else it will take too long computation wise
     # color = if it's our turn, we choose most advantageous, else choose least advantageous
