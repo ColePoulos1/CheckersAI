@@ -2,8 +2,8 @@ from BoardClasses import *
 import sys
 sys.path.append("./AI_Extensions/")
 from AI_Extensions import *
-#from StudentAI import StudentAI
-from AverageAI import StudentAI
+from StudentAI import StudentAI
+#from AverageAI import StudentAI
 from ManualAI import ManualAI
 
 class GameLogic:
