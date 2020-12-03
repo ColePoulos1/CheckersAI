@@ -35,30 +35,6 @@ class StudentAI:
     #     elif winningNumber != 0:  # loss
     #         value -= 1000
     #     return value
-    #
-    # def r_traversal(self, depth):
-    #     # Prevents from going deeper to save time on calculation
-    #     if depth == 3:
-    #         return 0
-    #     cur_color = (depth % 2) + 1  # color of move we're making
-    #     moves = self.board.get_all_possible_moves(cur_color)
-    #     best_move = None
-    #     best_val = -100000
-    #     for pieces in moves:
-    #         for m in pieces:
-    #             self.board.make_move(m, cur_color)
-    #             tmp_val = self.r_traversal(depth + 1)
-    #             if cur_color == self.color:
-    #                 tmp_val += self.heuristics(cur_color)
-    #             else:
-    #                 tmp_val -= self.heuristics(cur_color)
-    #             if tmp_val > best_val:
-    #                 best_move = m
-    #                 best_val = tmp_val
-    #             self.board.undo()
-    #
-    #     # This is in the case there is no possible moves
-    #     return 0 if best_move is None else best_val
 
     def get_move(self, move):
         # If a move has been made by the opponent, we are player 2
@@ -71,7 +47,7 @@ class StudentAI:
         # TODO : Add heuristics to improve MCTS
         rootnode = MCTSNode(self.color, self.board)
         mcts = MCTS(rootnode)
-        move = (mcts.best_move(100)).move #TODO: not sure about this number
+        move = (mcts.best_move(50)).move #TODO: not sure about this number
         self.board.make_move(move, self.color)
         return move
 
@@ -110,13 +86,12 @@ class MCTSNode:
         #flatten 2d move list
         self.unknown_moves = [i for x in self.board.get_all_possible_moves(self.mycolor) for i in x]
         self.is_win = self.board.is_win(self.mycolor) != 0
-        # Todo : come up with a better way to return the move than storing it
-        self.move = move
+        self.move = move # TODO : I think it's fine to store the move, its just a couple tuples (int,int)
 
     def q(self):
         # Results can be either 2 for W or 1 for B
         wins = self.results[self.parent.mycolor]
-        opponent = 1 if self.parent.mycolor == 2 else 2
+        opponent = other(self.parent.mycolor)
         # key error occurs in scenarios where the opponent hasn't won yet, so there's no key for it.
         losses = 0 if self.results.get(opponent) is None else self.results[opponent]
         return wins - losses
@@ -125,7 +100,7 @@ class MCTSNode:
         cb = copy.deepcopy(self.board) #this deep copy is expensive, idk how to fix that
         move = self.unknown_moves.pop()
         cb.make_move(move, self.mycolor)
-        cn = MCTSNode(self.mycolor, cb, self, move)
+        cn = MCTSNode(self.mycolor, cb, self, move) #TODO: should we be alternating the color here or no?
         self.children.append(cn)
         return cn
 
@@ -158,3 +133,7 @@ class MCTSNode:
         # TODO : Sometimes, this program will crash because max(choices_weights) will be empty. I don't know why.
         choices_weights = [(c.q() / c.n) + cp * sqrt((2 * log(self.n) / c.n)) for c in self.children]
         return self.children[choices_weights.index(max(choices_weights))]
+
+
+def other(color): #just easily see who the other player is
+    return 2 if color == 1 else 1
