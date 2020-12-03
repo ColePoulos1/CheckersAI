@@ -68,11 +68,12 @@ class StudentAI:
         else:
             self.color = 1
 
+        # TODO : Add heuristics to improve MCTS
         rootnode = MCTSNode(self.color, self.board)
         mcts = MCTS(rootnode)
-        self.board = mcts.best_move(100) #TODO: not sure about this number
-        # TODO: return the move (this best_move function returns a board state not a move)
-        return None
+        move = (mcts.best_move(100)).move #TODO: not sure about this number
+        self.board.make_move(move, self.color)
+        return move
 
 
 class MCTS:
@@ -85,6 +86,7 @@ class MCTS:
             reward = v.rollout()
             v.backpropagate(reward)
         # to select best child go for exploitation only
+        # we can also use sqrt(2) bc book says that's a good value for exploration if we want that too
         return self.root.best_child(0.0)
 
     def mcts_tree(self): #selects node to run rollout/play out for
@@ -98,9 +100,9 @@ class MCTS:
 
 
 class MCTSNode:
-    def __init__(self, mycolor, board, parent=None):
+    def __init__(self, mycolor, board, parent=None, move = None):
         self.mycolor = mycolor
-        self.board = board
+        self.board = board # TODO : reusing a board for later optimization?
         self.parent = parent
         self.children = []
         self.n = 0.
@@ -108,25 +110,34 @@ class MCTSNode:
         #flatten 2d move list
         self.unknown_moves = [i for x in self.board.get_all_possible_moves(self.mycolor) for i in x]
         self.is_win = self.board.is_win(self.mycolor) != 0
+        # Todo : come up with a better way to return the move than storing it
+        self.move = move
 
     def q(self):
-        wins = self.results[self.parent.board.next_to_move] #TODO: implement next_to_move
-        losses = self.results[-1 * self.parent.board.next_to_move] #TODO: implement next_to_move
+        # Results can be either 2 for W or 1 for B
+        wins = self.results[self.parent.mycolor]
+        opponent = 1 if self.parent.mycolor == 2 else 2
+        # key error occurs in scenarios where the opponent hasn't won yet, so there's no key for it.
+        losses = 0 if self.results.get(opponent) is None else self.results[opponent]
         return wins - losses
 
     def expand(self): #expand this node out one child
         cb = copy.deepcopy(self.board) #this deep copy is expensive, idk how to fix that
-        cb.make_move(self.unknown_moves.pop(), self.mycolor)
-        cn = MCTSNode(self.mycolor, cb, self)
+        move = self.unknown_moves.pop()
+        cb.make_move(move, self.mycolor)
+        cn = MCTSNode(self.mycolor, cb, self, move)
         self.children.append(cn)
         return cn
 
     def rollout(self): #randomly rollout to a win state
         num_rolls = 0
+        cur_turn = self.mycolor
         while self.board.is_win(self.mycolor) == 0:
-            possible_moves = self.board.get_all_possible_moves(self.mycolor)
-            self.board.make_move(random.choice(possible_moves))
-            num_rolls += 1
+            cur_turn = 1 if cur_turn == 2 else 2
+            possible_moves = self.board.get_all_possible_moves(cur_turn)
+            if possible_moves:
+                self.board.make_move(random.choice(random.choice(possible_moves)), cur_turn)
+                num_rolls += 1
         ret_win = self.board.is_win(self.mycolor)
         for _ in range(num_rolls):
             self.board.undo()
@@ -134,6 +145,8 @@ class MCTSNode:
 
     def backpropagate(self, result): #send results up the chain of nodes
         self.n += 1.
+        # Ties are considered wins for us, and results are listed as -1.
+        result = self.mycolor if result == -1 else result
         if result not in self.results:
             self.results[result] = 1
         else:
@@ -142,6 +155,6 @@ class MCTSNode:
             self.parent.backpropagate(result)
 
     def best_child(self, cp=1.4): #choose the most promising child node
-        choices_weights = [(c.q / c.n) + cp * sqrt((2 * log(self.n) / c.n)) for c in self.children]
-        # TODO: not sure how this function works
+        # TODO : Sometimes, this program will crash because max(choices_weights) will be empty. I don't know why.
+        choices_weights = [(c.q() / c.n) + cp * sqrt((2 * log(self.n) / c.n)) for c in self.children]
         return self.children[choices_weights.index(max(choices_weights))]

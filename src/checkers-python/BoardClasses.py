@@ -432,19 +432,18 @@ if __name__ == "__main__":
     # b.show_board()
 
     b=Board(7,7,2)
-    b.initialize_game()
-    b.show_board()
-    m = b.get_all_possible_moves(1)
-    print(m)
-    b.make_move(m[0][0],1)
-    b.show_board()
-    m = b.get_all_possible_moves(1)
-
-    # b.board[1][3] = Checker.Checker("W", [1, 3])
+    # b.initialize_game()
     # b.show_board()
-    #
-    # m = b.get_all_possible_moves("W")
+    # m = b.get_all_possible_moves(1)
     # print(m)
+    # b.make_move(m[0][0],1)
+    # b.show_board()
+    # m = b.get_all_possible_moves(1)
+
+    b.board[0][0] = Checker.Checker("B", [0, 0])
+    b.show_board()
+    m = b.get_all_possible_moves("B")
+    print(m)
     # b.make_move(m,"W")
     # b.show_board()
     # m = b.get_all_possible_moves("W")[0][0]
