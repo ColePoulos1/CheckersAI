@@ -48,7 +48,7 @@ class MCTS:
             selected = self.mcts_tree()
             selected.rollout()
 
-        return self.root.best_child(0.0) if self.root.children else self.root
+        return self.root.best_child() if self.root.children else self.root
 
     def mcts_tree(self): #selects node to run rollout/play out for
         cur = self.root
@@ -109,8 +109,8 @@ class MCTSNode:
 
     def backpropagate(self, result): #send results up the chain of nodes
         self.n += 1.
-        # Ties are considered wins for us, and results are listed as -1.
-        result = self.rootcolor if result == -1 else result
+        # Ties are considered losses for us, and results are listed as -1.
+        result = other(self.rootcolor) if result == -1 else result
         if result not in self.results:
             self.results[result] = 1.0
         else:
@@ -118,9 +118,9 @@ class MCTSNode:
         if self.parent:
             self.parent.backpropagate(result)
 
-    def best_child(self, cp=1.4): #choose the most promising child node
+    def best_child(self): #choose the most promising child node
         # TODO : Sometimes, this program will crash because max(choices_weights) will be empty. I don't know why.
-        choices_weights = [(c.q() / c.n) + cp * sqrt((2 * log(self.n) / c.n)) for c in self.children]
+        choices_weights = [(c.q() / c.n) + sqrt(2) * sqrt((2 * log(self.n) / c.n)) for c in self.children]
         return self.children[choices_weights.index(max(choices_weights))]
 
 
