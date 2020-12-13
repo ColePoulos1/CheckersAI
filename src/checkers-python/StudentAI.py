@@ -4,7 +4,6 @@ from BoardClasses import Board
 import random
 from math import sqrt, log
 import copy
-import time
 
 class StudentAI:
     def __init__(self,col,row,p):
@@ -52,26 +51,19 @@ class StudentAI:
         self.board.make_move(move, self.color)
         return move
 
+
 class MCTS:
     def __init__(self, node):
         self.root = node
 
     def best_move(self, simulations_number):
-        start = time.time()
         for _ in range(simulations_number):
-            # TODO : not sure if it should be exactly 20 seconds
-            # I put it at >= 20 because tree searches should get faster deeper in the game
-            # so spending a lil more time at the start shouldn't be too bad if we spend a lil over 20 seconds?
-            if time.time() - start >= 20:
-                break
-
             v = self.mcts_tree()
             reward = v.rollout()
             v.backpropagate(reward)
         # to select best child go for exploitation only
         # we can also use sqrt(2) bc book says that's a good value for exploration if we want that too
-
-        return self.root.best_child(0.0) if self.root.children else self.root
+        return self.root.best_child(0.0)
 
     def mcts_tree(self): #selects node to run rollout/play out for
         cur = self.root
@@ -79,12 +71,7 @@ class MCTS:
             if cur.unknown_moves:
                 return cur.expand()
             else:
-                if cur.children:
-                    cur = cur.best_child()
-                # without this else statement it will go in an infinite loop
-                # as the game will never end while the ai is still "deciding".
-                else:
-                    break
+                cur = cur.best_child()
         return cur
 
 
@@ -150,4 +137,3 @@ class MCTSNode:
 
 def other(color): #just easily see who the other player is
     return 2 if color == 1 else 1
-
