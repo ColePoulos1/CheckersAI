@@ -6,6 +6,9 @@ from math import sqrt, log
 import copy
 import time
 
+random.seed()
+
+
 class StudentAI:
     def __init__(self,col,row,p):
         self.col = col
@@ -18,25 +21,6 @@ class StudentAI:
         self.color = 2
         # Add a timer to not exceed 8 minutes
 
-    # TODO : improve this function
-    # Possible Heuristics? : https://www.mini.pw.edu.pl/~mandziuk/PRACE/es_init.pdf (page 5) <- this paper has
-    # a pretty long list of checkers heuristics that we could consider along the way, if we wanna get try-hard lol
-    # Losing a king/Enemy gains a king: 0-10
-    # Getting closer to an enemy instead of farther away : 0-5
-    # def heuristics(self, cur_color):
-    #     diffInPieces = (self.board.white_count - self.board.black_count) if cur_color == 2 else (
-    #                 self.board.black_count - self.board.white_count)
-    #     value = diffInPieces * 10
-    #
-    #     winningNumber = self.board.is_win(cur_color)
-    #     if winningNumber == cur_color:  # win
-    #         value += 1000
-    #     elif winningNumber == -1:  # tie
-    #         value -= 500
-    #     elif winningNumber != 0:  # loss
-    #         value -= 1000
-    #     return value
-
     def get_move(self, move):
         # If a move has been made by the opponent, we are player 2
         # Else there has been no move, we are player 1
@@ -46,9 +30,9 @@ class StudentAI:
             self.color = 1
 
         # TODO : Add heuristics to improve MCTS
-        rootnode = MCTSNode(self.color, self.board)
+        rootnode = MCTSNode(self.color, self.board, self.color)
         mcts = MCTS(rootnode)
-        move = (mcts.best_move(50)).move #TODO: not sure about this number
+        move = (mcts.best_move(500)).move #TODO: not sure about this number
         self.board.make_move(move, self.color)
         return move
 
@@ -59,17 +43,10 @@ class MCTS:
     def best_move(self, simulations_number):
         start = time.time()
         for _ in range(simulations_number):
-            # TODO : not sure if it should be exactly 20 seconds
-            # I put it at >= 20 because tree searches should get faster deeper in the game
-            # so spending a lil more time at the start shouldn't be too bad if we spend a lil over 20 seconds?
-            if time.time() - start >= 20:
+            if time.time() - start >= 20: # TODO : not sure if it should be exactly 20 seconds
                 break
-
-            v = self.mcts_tree()
-            reward = v.rollout()
-            v.backpropagate(reward)
-        # to select best child go for exploitation only
-        # we can also use sqrt(2) bc book says that's a good value for exploration if we want that too
+            selected = self.mcts_tree()
+            selected.rollout()
 
         return self.root.best_child(0.0) if self.root.children else self.root
 
@@ -89,56 +66,55 @@ class MCTS:
 
 
 class MCTSNode:
-    def __init__(self, mycolor, board, parent=None, move = None):
+    def __init__(self, mycolor, board, rootcolor, parent=None, move = None):
         self.mycolor = mycolor
         self.board = board # TODO : reusing a board for later optimization?
         self.parent = parent
+        self.rootcolor = rootcolor
         self.children = []
-        self.n = 0.
+        self.n = 0.0
         self.results = {}
         #flatten 2d move list
         self.unknown_moves = [i for x in self.board.get_all_possible_moves(self.mycolor) for i in x]
         self.is_win = self.board.is_win(self.mycolor) != 0
-        self.move = move # TODO : I think it's fine to store the move, its just a couple tuples (int,int)
+        self.move = move
 
     def q(self):
         # Results can be either 2 for W or 1 for B
-        wins = self.results[self.parent.mycolor]
-        opponent = other(self.parent.mycolor)
-        # key error occurs in scenarios where the opponent hasn't won yet, so there's no key for it.
-        losses = 0 if self.results.get(opponent) is None else self.results[opponent]
+        wins = 0.0 if self.results.get(self.rootcolor) is None else self.results[self.rootcolor]
+        losses = 0.0 if self.results.get(other(self.rootcolor)) is None else self.results[other(self.rootcolor)]
         return wins - losses
 
     def expand(self): #expand this node out one child
         cb = copy.deepcopy(self.board) #this deep copy is expensive, idk how to fix that
         move = self.unknown_moves.pop()
         cb.make_move(move, self.mycolor)
-        cn = MCTSNode(self.mycolor, cb, self, move) #TODO: should we be alternating the color here or no?
+        cn = MCTSNode(other(self.mycolor), cb, self.rootcolor, self, move)
         self.children.append(cn)
         return cn
 
     def rollout(self): #randomly rollout to a win state
         num_rolls = 0
-        cur_turn = self.mycolor
-        while self.board.is_win(self.mycolor) == 0:
-            cur_turn = 1 if cur_turn == 2 else 2
-            possible_moves = self.board.get_all_possible_moves(cur_turn)
+        cur_col = self.mycolor
+        while self.board.is_win(self.rootcolor) == 0:
+            possible_moves = self.board.get_all_possible_moves(cur_col)
             if possible_moves:
-                self.board.make_move(random.choice(random.choice(possible_moves)), cur_turn)
+                self.board.make_move(random.choice(random.choice(possible_moves)), cur_col)
                 num_rolls += 1
-        ret_win = self.board.is_win(self.mycolor)
+            cur_col = other(cur_col)
+        ret_win = self.board.is_win(self.rootcolor)
         for _ in range(num_rolls):
             self.board.undo()
-        return ret_win
+        self.backpropagate(ret_win)
 
     def backpropagate(self, result): #send results up the chain of nodes
         self.n += 1.
         # Ties are considered wins for us, and results are listed as -1.
-        result = self.mycolor if result == -1 else result
+        result = self.rootcolor if result == -1 else result
         if result not in self.results:
-            self.results[result] = 1
+            self.results[result] = 1.0
         else:
-            self.results[result] += 1.
+            self.results[result] += 1.0
         if self.parent:
             self.parent.backpropagate(result)
 
