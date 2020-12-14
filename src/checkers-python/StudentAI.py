@@ -88,8 +88,8 @@ class MCTSNode:
                 self.board.undo()
 
     def q(self):
-        wins = 0.0 if self.results.get(self.parent.mycolor) is None else self.results[self.parent.mycolor]
-        losses = 0.0 if self.results.get(self.mycolor) is None else self.results[self.mycolor]
+        losses = 0.0 if self.results.get(self.parent.mycolor) is None else self.results[self.parent.mycolor]
+        wins = 0.0 if self.results.get(self.mycolor) is None else self.results[self.mycolor]
         return wins - losses
 
     def expand(self): #expand this node out one child
