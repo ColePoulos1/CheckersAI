@@ -39,7 +39,7 @@ class MCTS:
     def best_move(self, simulations_number):
         start = time.time()
         for _ in range(simulations_number):
-            if time.time() - start >= 25: # TODO : not sure if it should be exactly 20 seconds
+            if time.time() - start >= 20: # TODO : not sure if it should be exactly 20 seconds
                 break
             selected = self.mcts_tree()
             selected.rollout()
