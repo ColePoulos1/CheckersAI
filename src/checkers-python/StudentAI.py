@@ -29,10 +29,9 @@ class StudentAI:
         else:
             self.color = 1
 
-        # TODO : Add heuristics to improve MCTS
-        rootnode = MCTSNode(self.color, self.board, self.color)
+        rootnode = MCTSNode(self.color, self.board, self.color, [])
         mcts = MCTS(rootnode)
-        move = (mcts.best_move(500)).move #TODO: not sure about this number
+        move = mcts.best_move(800).moves[0] #TODO: decide number
         self.board.make_move(move, self.color)
         return move
 
@@ -43,7 +42,7 @@ class MCTS:
     def best_move(self, simulations_number):
         start = time.time()
         for _ in range(simulations_number):
-            if time.time() - start >= 20: # TODO : not sure if it should be exactly 20 seconds
+            if time.time() - start >= 45: # TODO : not sure if it should be exactly 20 seconds
                 break
             selected = self.mcts_tree()
             selected.rollout()
@@ -66,7 +65,7 @@ class MCTS:
 
 
 class MCTSNode:
-    def __init__(self, mycolor, board, rootcolor, parent=None, move = None):
+    def __init__(self, mycolor, board, rootcolor, moves, parent=None):
         self.mycolor = mycolor
         self.board = board # TODO : reusing a board for later optimization?
         self.parent = parent
@@ -74,10 +73,22 @@ class MCTSNode:
         self.children = []
         self.n = 0.0
         self.results = {}
-        #flatten 2d move list
+
+        self.moves = moves
+        self.boardprep(True)
         self.unknown_moves = [i for x in self.board.get_all_possible_moves(self.mycolor) for i in x]
         self.is_win = self.board.is_win(self.mycolor) != 0
-        self.move = move
+        self.boardprep(False)
+
+    def boardprep(self, starting):
+        if starting:
+            cur_col = self.rootcolor
+            for m in self.moves:
+                self.board.make_move(m, cur_col)
+                cur_col = other(cur_col)
+        else:
+            for _ in range(len(self.moves)):
+                self.board.undo()
 
     def q(self):
         # Results can be either 2 for W or 1 for B
@@ -86,25 +97,26 @@ class MCTSNode:
         return wins - losses
 
     def expand(self): #expand this node out one child
-        cb = copy.deepcopy(self.board) #this deep copy is expensive, idk how to fix that
         move = self.unknown_moves.pop()
-        cb.make_move(move, self.mycolor)
-        cn = MCTSNode(other(self.mycolor), cb, self.rootcolor, self, move)
+        cn = MCTSNode(other(self.mycolor), self.board, self.rootcolor, self.moves+[move], self)
         self.children.append(cn)
         return cn
 
     def rollout(self): #randomly rollout to a win state
         num_rolls = 0
         cur_col = self.mycolor
+        self.boardprep(True)
         while self.board.is_win(self.rootcolor) == 0:
             possible_moves = self.board.get_all_possible_moves(cur_col)
             if possible_moves:
                 self.board.make_move(random.choice(random.choice(possible_moves)), cur_col)
                 num_rolls += 1
             cur_col = other(cur_col)
+
         ret_win = self.board.is_win(self.rootcolor)
         for _ in range(num_rolls):
             self.board.undo()
+        self.boardprep(False)
         self.backpropagate(ret_win)
 
     def backpropagate(self, result): #send results up the chain of nodes
