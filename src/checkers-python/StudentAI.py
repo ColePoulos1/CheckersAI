@@ -16,8 +16,6 @@ class StudentAI:
         self.p = p
         self.board = Board(col,row,p)
         self.board.initialize_game()
-        self.color = ''
-        self.opponent = {1:2,2:1}
         self.color = 2
         # Add a timer to not exceed 8 minutes
 
@@ -25,15 +23,14 @@ class StudentAI:
         # If a move has been made by the opponent, we are player 2
         # Else there has been no move, we are player 1
         if len(move) != 0:
-            self.board.make_move(move, self.opponent[self.color])
+            self.board.make_move(move, other(self.color))
         else:
             self.color = 1
 
-        rootnode = MCTSNode(self.color, self.board, self.color, [])
-        mcts = MCTS(rootnode)
-        move = mcts.best_move(800).moves[0] #TODO: decide number
-        self.board.make_move(move, self.color)
-        return move
+        mcts = MCTS(MCTSNode(self.color, self.board, self.color, []))
+        movenode = mcts.best_move(800) #TODO: decide number
+        self.board.make_move(movenode.moves[0], self.color)
+        return movenode.moves[0]
 
 class MCTS:
     def __init__(self, node):
@@ -42,7 +39,7 @@ class MCTS:
     def best_move(self, simulations_number):
         start = time.time()
         for _ in range(simulations_number):
-            if time.time() - start >= 45: # TODO : not sure if it should be exactly 20 seconds
+            if time.time() - start >= 25: # TODO : not sure if it should be exactly 20 seconds
                 break
             selected = self.mcts_tree()
             selected.rollout()
@@ -91,9 +88,8 @@ class MCTSNode:
                 self.board.undo()
 
     def q(self):
-        # Results can be either 2 for W or 1 for B
-        wins = 0.0 if self.results.get(self.rootcolor) is None else self.results[self.rootcolor]
-        losses = 0.0 if self.results.get(other(self.rootcolor)) is None else self.results[other(self.rootcolor)]
+        wins = 0.0 if self.results.get(self.parent.mycolor) is None else self.results[self.parent.mycolor]
+        losses = 0.0 if self.results.get(self.mycolor) is None else self.results[self.mycolor]
         return wins - losses
 
     def expand(self): #expand this node out one child
@@ -120,7 +116,7 @@ class MCTSNode:
         self.backpropagate(ret_win)
 
     def backpropagate(self, result): #send results up the chain of nodes
-        self.n += 1.
+        self.n += 1.0
         # Ties are considered losses for us, and results are listed as -1.
         result = other(self.rootcolor) if result == -1 else result
         if result not in self.results:
@@ -131,7 +127,6 @@ class MCTSNode:
             self.parent.backpropagate(result)
 
     def best_child(self): #choose the most promising child node
-        # TODO : Sometimes, this program will crash because max(choices_weights) will be empty. I don't know why.
         choices_weights = [(c.q() / c.n) + sqrt(2) * sqrt((2 * log(self.n) / c.n)) for c in self.children]
         return self.children[choices_weights.index(max(choices_weights))]
 
